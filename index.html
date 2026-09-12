@@ -354,10 +354,10 @@ function setView(view){if(!['mines','smelting','workshop'].includes(view)||(view
 function renderNavigation(){const owned=s.workshop.owned,nav=$('location-nav'),panel=$('workshop-panel'),target=owned?$('workshop-view'):$('workshop-slot');nav.hidden=!owned&&!s.unlocks.furnace;$('nav-workshop').hidden=!owned;$('nav-smelting').hidden=!s.unlocks.furnace;document.body.classList.toggle('location-nav-active',!nav.hidden);if(panel.parentElement!==target)target.appendChild(panel);if((activeView==='workshop'&&!owned)||(activeView==='smelting'&&!s.unlocks.furnace))activeView='mines';if(workshopJustPurchased){workshopJustPurchased=false;activeView='workshop';viewScroll.workshop=0;requestAnimationFrame(()=>window.scrollTo({top:0,left:0,behavior:'auto'}))}applyView()}
 function render(){if($('hud-gold-total'))$('hud-gold-total').textContent=s.gold.toLocaleString();renderNavigation();mountMines();for(const o of ORES)if(oreUnlocked(o)&&$('mine-'+o))renderMine(o);renderWorkforce();renderEquipment();renderInventory();renderUpgrades();renderDevelopments();$('progression-panel').hidden=$('developments-panel').hidden&&$('upgrades-panel').hidden;renderFurnaces();renderBlacksmith();renderWorkshop();renderLog()}
 // Independent furnace slots; smithing uses its separate workshop.forge state.
-const SMELTING={slotSpeed:[1,1.25,1.55,1.9,2.3],slotCosts:[{gold:50,bronze:4},{gold:120,ironbar:6},{gold:250,steel:8},{gold:500,mithrilbar:6}],liningCosts:[{gold:100,ironbar:5},{gold:250,steel:8},{gold:600,mithrilbar:8}]};
+const SMELTING={slotPurchase:{goldBase:75,goldStep:75,copperBase:20,copperStep:10,bronzeStep:5},slotSpeed:[1,1.25,1.55,1.9,2.3],slotCosts:[{gold:50,bronze:4},{gold:120,ironbar:6},{gold:250,steel:8},{gold:500,mithrilbar:6}],liningCosts:[{gold:100,ironbar:5},{gold:250,steel:8},{gold:600,mithrilbar:8}]};
 function newSmeltingSlot(recipe=null){return {recipe,level:1,running:false,active:false,progress:0,heat:0,autoStoke:false}}
 function migrateSmelting(f){const slots=[];for(const r of BARS){const count=f.allocations[r]||0,x=f.recipes[r];for(let i=0;i<count;i++){const slot=newSmeltingSlot(r);slot.running=x.running;slot.autoStoke=x.autoStoke;slot.heat=x.heat;if(i===0){slot.active=x.active;slot.progress=x.progress}slots.push(slot)}if(!count&&x.active){const slot=newSmeltingSlot(r);Object.assign(slot,{active:true,progress:x.progress,heat:x.heat,running:false,autoStoke:x.autoStoke});slots.push(slot)}}while(slots.length<f.total)slots.push(newSmeltingSlot());return slots}
-function furnaceBuyCost(){const e=s.furnaces.slots.length;return {gold:25+10*e,copper:10+5*e}}
+function furnaceBuyCost(){const e=s.furnaces.slots.length,c=SMELTING.slotPurchase;return {gold:c.goldBase+c.goldStep*e,copper:c.copperBase+c.copperStep*e,...(e?{bronze:c.bronzeStep*e}:{})}}
 function buyFurnace(){if(!s.unlocks.furnace)return;const c=furnaceBuyCost();if(spend(c)){s.furnaces.slots.push(newSmeltingSlot());s.furnaces.total=s.furnaces.slots.length;log('A new furnace slot is ready. Assign a bar recipe.')}}
 function slotSpeed(x){return SMELTING.slotSpeed[x.level-1]*furnaceSpeed()*(1+.1*(s.furnaces.lining||0))}
 function slotCost(x){return SMELTING.slotCosts[x.level-1]||null}
@@ -413,4 +413,5 @@ render();let last=performance.now(),saveElapsed=0;setInterval(()=>{const now=per
 </script>
 </body>
 </html>
+
 
